@@ -1,9 +1,11 @@
 import express from "express";
+import { upload } from "../middlewares/multer.middleware.js";
 import {
   getProfile,
   login,
   logout,
   signup,
+  updateAvatar,
 } from "../controllers/auth.controller.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 
@@ -13,5 +15,8 @@ router.route("/signup").post(signup);
 router.route("/login").post(login);
 router.route("/logout").post(verifyJwt, logout);
 router.route("/profile").get(verifyJwt, getProfile);
+router
+  .route("/update-avatar")
+  .put(verifyJwt, upload.single("avatar"), updateAvatar);
 
 export default router;

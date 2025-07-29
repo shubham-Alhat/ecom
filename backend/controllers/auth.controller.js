@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { User } from "../models/user.model.js";
 import jwt from "jsonwebtoken";
+import { deleteFromCloudinary, uploadOnCloudinary } from "../lib/cloudinary.js";
 
 // function for generating token
 const createToken = (userId) => {
@@ -169,5 +170,62 @@ export const getProfile = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Error while getting profile info", success: false });
+  }
+};
+
+export const updateAvatar = async (req, res) => {
+  try {
+    const avatarLocalPath = req.file.path;
+
+    if (!avatarLocalPath) {
+      return res
+        .status(404)
+        .json({ message: "avatar Local path is not found", success: false });
+    }
+
+    const response = await uploadOnCloudinary(avatarLocalPath);
+
+    if (!response || !response.secure_url) {
+      return res.status(500).json({
+        message: "Internal server error while uploading file on cloudinary",
+        success: false,
+      });
+    }
+
+    if (req.user.fileId) {
+      const result = await deleteFromCloudinary(req.user.fileId);
+    }
+
+    // get the user and upadte avatar
+    const user = await User.findByIdAndUpdate(
+      req.user?._id,
+      {
+        $set: {
+          avatar: response.secure_url,
+          fileId: response.public_id,
+        },
+      },
+      {
+        new: true,
+      }
+    ).select("-password");
+
+    if (!user) {
+      return res.status(500).json({
+        message: "User not found while updating avatar",
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      message: "User avatar updated successfully",
+      success: true,
+      user,
+    });
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ message: "Error while updating avatar", success: false });
   }
 };
