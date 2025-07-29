@@ -11,6 +11,6 @@ app.use(express.static("public")); // to store temp files on server. such files 
 app.use(cookieParser()); // allow express to set and read client's browser cookies.
 
 // auth routes
-app.use("/api/auth", authRoutes);
+app.use("/api/v1/auth", authRoutes);
 
 export default app;
