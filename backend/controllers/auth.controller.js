@@ -193,7 +193,7 @@ export const updateAvatar = async (req, res) => {
     }
 
     if (req.user.fileId) {
-      const result = await deleteFromCloudinary(req.user.fileId);
+      await deleteFromCloudinary(req.user.fileId);
     }
 
     // get the user and upadte avatar
