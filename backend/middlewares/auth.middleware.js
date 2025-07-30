@@ -44,3 +44,32 @@ export const verifyJwt = async (req, res, next) => {
     });
   }
 };
+
+export const verifyBrand = async (req, res, next) => {
+  try {
+    const user = req.user;
+
+    if (!user || !user.role) {
+      return res.status(401).json({
+        message: "Unauthorized: Please login",
+        success: false,
+      });
+    }
+
+    if (user.role !== "brand") {
+      return res.status(403).json({
+        message: "Access denied: Only brands can access this feature",
+        success: false,
+      });
+    }
+
+    // Role is brand, proceed
+    next();
+  } catch (error) {
+    console.error("verifyBrand error:", error);
+    return res.status(500).json({
+      message: "Internal server error in verifyBrand",
+      success: false,
+    });
+  }
+};

@@ -1,6 +1,7 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import authRoutes from "../routes/auth.routes.js";
+import brandRoutes from "../routes/brand.routes.js";
 
 const app = express();
 
@@ -10,7 +11,8 @@ app.use(express.urlencoded({ extended: true, limit: "16kb" })); // Allow express
 app.use(express.static("public")); // to store temp files on server. such files which are not imp.
 app.use(cookieParser()); // allow express to set and read client's browser cookies.
 
-// auth routes
+// routes
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/brand", brandRoutes);
 
 export default app;
