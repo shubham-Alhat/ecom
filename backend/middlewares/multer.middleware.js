@@ -39,8 +39,5 @@ const upload = multer({
 // For uploading avatar (1 image)
 export const avatarUpload = upload.single("avatar");
 
-// For creating/updating product (1 video + max 5 images)
-export const productUpload = upload.fields([
-  { name: "video", maxCount: 1 },
-  { name: "images", maxCount: 5 },
-]);
+export const uploadVideo = upload.single("video");
+export const uploadImages = upload.array("images", 5);

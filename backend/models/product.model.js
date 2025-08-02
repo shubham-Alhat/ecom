@@ -17,12 +17,13 @@ const productSchema = new mongoose.Schema(
       min: 0,
       required: true,
     },
-    images: {
-      type: [String],
-    },
-    imagesPublic_id: {
-      type: [String],
-    },
+    images: [
+      {
+        imageUrl: { type: String, required: true },
+        publicId: { type: String, required: true },
+      },
+    ],
+
     video: {
       type: String,
       required: true,

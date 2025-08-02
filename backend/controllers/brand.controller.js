@@ -1,7 +1,9 @@
 import { uploadOnCloudinary } from "../lib/cloudinary.js";
+import deleteLocalImages from "../lib/deleteImages.js";
 import { Product } from "../models/product.model.js";
+import fs from "fs";
 
-export const uploadProductVideo = async (req, res) => {
+export const createNewProduct = async (req, res) => {
   try {
     const { title, description, price } = req.body;
     const owner = req.user;
@@ -12,8 +14,7 @@ export const uploadProductVideo = async (req, res) => {
         .json({ message: "All fields are required", success: false });
     }
 
-    const videoFile = req.files?.video?.[0];
-    const imageFiles = req.files?.images || [];
+    const videoFile = req.file;
 
     if (!videoFile) {
       return res
@@ -22,51 +23,100 @@ export const uploadProductVideo = async (req, res) => {
     }
 
     // upload video
-    const videoResponse = await uploadOnCloudinary(videoFile.path);
+    const response = await uploadOnCloudinary(videoFile.path);
 
-    if (!videoResponse) {
-      return res
-        .status(500)
-        .json({
-          message: "Error while uploading video on cloudinary",
-          success: false,
-        });
+    if (!response) {
+      return res.status(500).json({
+        message: "Error while uploading video on cloudinary",
+        success: false,
+      });
     }
 
-    // upload images
-    const imageResponse = await Promise.all(
-      imageFiles.map((file) => uploadOnCloudinary(file.path))
-    );
-
-    // create entry in db
     const newProduct = await Product.create({
       title,
       description,
       price,
-      images: imageResponse.map((img) => img.secure_url),
-      imagesPublic_id: imageResponse.map((img) => img.public_id),
-      video: videoResponse.secure_url,
-      videoPublic_id: videoResponse.public_id,
+      video: response.secure_url,
+      videoPublic_id: response.public_id,
       owner: owner._id,
     });
 
     if (!newProduct) {
       return res
         .status(500)
-        .json({ message: "Error while creating new product", success: false });
+        .json({ message: "Error while creating product", success: false });
     }
 
-    return res
-      .status(201)
-      .json({
-        message: "New product created successfully",
-        success: true,
-        newProduct,
-      });
+    return res.status(201).json({
+      message: "New product created successfully",
+      success: true,
+      newProduct,
+    });
   } catch (error) {
     console.log(error);
-    return res
-      .status(500)
-      .json({ message: "Error while uploading video", success: false });
+    return res.status(500).json({
+      message: "Internal Error while creating new product",
+      success: false,
+    });
+  }
+};
+
+export const addPhotosForPoduct = async (req, res) => {
+  try {
+    const images = req.files;
+
+    if (!images) {
+      return res
+        .status(400)
+        .json({ message: "Images not found", success: false });
+    }
+
+    const { productId } = req.params;
+
+    if (!productId) {
+      return res.status(400).json({
+        message: "Product ID is required",
+        success: false,
+      });
+    }
+
+    const uploadedImages = [];
+
+    for (const image of images) {
+      const result = await uploadOnCloudinary(image.path);
+      if (result) {
+        uploadedImages.push({
+          imageUrl: result.secure_url,
+          publicId: result.public_id,
+        });
+      }
+    }
+
+    const updatedProduct = await Product.findByIdAndUpdate(
+      productId,
+      {
+        $push: { images: { $each: uploadedImages } },
+      },
+      { new: true }
+    );
+
+    if (!updatedProduct) {
+      return res.status(500).json({
+        message: "Error while uploading images for product",
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Images uploaded for product succesfuly",
+      success: true,
+      updatedProduct,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Internal error while uploading images",
+      success: false,
+    });
   }
 };

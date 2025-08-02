@@ -2,6 +2,8 @@ import bcrypt from "bcryptjs";
 import { User } from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import { deleteFromCloudinary, uploadOnCloudinary } from "../lib/cloudinary.js";
+import { Product } from "../models/product.model.js";
+import { Cart } from "../models/cart.model.js";
 
 // function for generating token
 const createToken = (userId) => {
@@ -227,5 +229,96 @@ export const updateAvatar = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Error while updating avatar", success: false });
+  }
+};
+
+export const addToCart = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const user = req.user;
+
+    if (!productId) {
+      return res.status(400).json({
+        message: "Product ID is required",
+        success: false,
+      });
+    }
+
+    const product = await Product.findById(productId);
+
+    if (!product) {
+      return res
+        .status(404)
+        .json({ message: "Product not found in db", success: false });
+    }
+
+    const newProductInCart = await Cart.create({
+      product: product._id,
+      user: user._id,
+      brand: product.owner,
+    });
+
+    if (!newProductInCart) {
+      return res
+        .status(500)
+        .json({ message: "Failed to add a new item in cart", success: false });
+    }
+
+    const populatedCart = await newProductInCart.populate([
+      "user",
+      "brand",
+      "product",
+    ]);
+
+    if (!populatedCart) {
+      return res
+        .status(500)
+        .json({ message: "Failed to populate fields in Cart", success: false });
+    }
+
+    return res.status(200).json({
+      message: "Product added in cart successfully",
+      success: true,
+      populatedCart,
+    });
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ message: "Error while adding product to cart", success: false });
+  }
+};
+
+export const removeFromCart = async (req, res) => {
+  try {
+    const { cartId } = req.params;
+
+    if (!cartId) {
+      return res.status(400).json({
+        message: "Product ID is required",
+        success: false,
+      });
+    }
+
+    const deletedCartProduct = await Cart.findByIdAndDelete(cartId);
+
+    if (deletedCartProduct) {
+      return res.status(200).json({
+        message: "Product removed from cart successfully",
+        success: true,
+        deletedCartProduct,
+      });
+    } else {
+      return res.status(404).json({
+        message: "Cart product not found",
+        success: false,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Error while removing product from cart",
+      success: false,
+    });
   }
 };
