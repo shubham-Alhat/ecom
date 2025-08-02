@@ -120,3 +120,31 @@ export const addPhotosForPoduct = async (req, res) => {
     });
   }
 };
+
+export const getBrandProduct = async (req, res) => {
+  try {
+    const brandId = req.user._id;
+
+    if (!brandId) {
+      return res
+        .status(400)
+        .json({ message: "Can't Authorized.", success: false });
+    }
+
+    const allProducts = await Product.find({ owner: brandId });
+
+    return res
+      .status(200)
+      .json({
+        message: "All products fetched successfully",
+        success: true,
+        allProducts,
+      });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Internal error while fetching products",
+      success: false,
+    });
+  }
+};
